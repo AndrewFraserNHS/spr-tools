@@ -1,0 +1,5 @@
+[
+  { "id": "ws-data", "name": "Data & Analytics", "description": "Reporting, dashboards and data quality.", "leadId": "p-dev-patel" },
+  { "id": "ws-delivery", "name": "Service Delivery", "description": "Day-to-day delivery and operational change.", "leadId": "p-ben-ortiz" },
+  { "id": "ws-gov", "name": "Governance", "description": "Assurance, risk and reporting to the board.", "leadId": "p-aisha-khan" }
+]

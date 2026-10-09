@@ -1,0 +1,7 @@
+[
+  { "id": "tm-1", "workstreamId": "ws-data", "personId": "p-dev-patel", "role": "Lead", "fte": 1 },
+  { "id": "tm-2", "workstreamId": "ws-data", "personId": "p-chloe-evans", "role": "Analyst", "fte": 0.4 },
+  { "id": "tm-3", "workstreamId": "ws-delivery", "personId": "p-ben-ortiz", "role": "Lead", "fte": 1 },
+  { "id": "tm-4", "workstreamId": "ws-delivery", "personId": "p-chloe-evans", "role": "Analyst", "fte": 0.6 },
+  { "id": "tm-5", "workstreamId": "ws-gov", "personId": "p-aisha-khan", "role": "Lead", "fte": 0.5 }
+]

@@ -1,0 +1,37 @@
+[
+  {
+    "id": "ac-nhs",
+    "short": "NHS",
+    "long": "National Health Service",
+    "description": "",
+    "workstreamId": ""
+  },
+  {
+    "id": "ac-icb",
+    "short": "ICB",
+    "long": "Integrated Care Board",
+    "description": "Statutory NHS organisation responsible for planning health services in a local area.",
+    "workstreamId": ""
+  },
+  {
+    "id": "ac-ics",
+    "short": "ICS",
+    "long": "Integrated Care System",
+    "description": "Partnership of organisations that plan and deliver joined-up health and care services.",
+    "workstreamId": ""
+  },
+  {
+    "id": "ac-pmo",
+    "short": "PMO",
+    "long": "Programme Management Office",
+    "description": "",
+    "workstreamId": "ws-delivery"
+  },
+  {
+    "id": "ac-spr",
+    "short": "SPR",
+    "long": "Specialist Programme Review",
+    "description": "Placeholder - replace with your own definition.",
+    "workstreamId": "ws-gov"
+  }
+]

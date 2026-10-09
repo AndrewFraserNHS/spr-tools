@@ -1,0 +1,4 @@
+[
+  { "id": "ev-1", "title": "Programme board", "date": "2026-11-05", "endDate": "", "workstreamId": "ws-gov", "location": "Teams", "notes": "Sample event - edit or delete me.", "personIds": ["p-aisha-khan"] },
+  { "id": "ev-2", "title": "Data quality review", "date": "2026-11-19", "endDate": "", "workstreamId": "ws-data", "location": "", "notes": "", "personIds": ["p-dev-patel", "p-chloe-evans"] }
+]

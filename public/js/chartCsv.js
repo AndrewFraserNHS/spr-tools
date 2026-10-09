@@ -91,7 +91,7 @@ export function planImport(current, csvText, { replaceTeams = false } = {}) {
       p = {
         id: uniqueId("p", name, ids),
         name: name.trim(),
-        company: company || "",
+        company: company ?? "",
         role: job || "",
         email: email || "",
       };
@@ -99,7 +99,7 @@ export function planImport(current, csvText, { replaceTeams = false } = {}) {
       pByName.set(key(name), p);
       addedP.add(p.id);
     } else {
-      if (company && p.company !== company) {
+      if (company !== undefined && p.company !== company) {
         p.company = company;
         changedP.add(p.id);
       }
@@ -129,7 +129,7 @@ export function planImport(current, csvText, { replaceTeams = false } = {}) {
     }
     if (r.description && ws.description !== r.description) { ws.description = r.description; changedWs.add(ws.id); }
     if (r.lead) {
-      const lead = ensurePerson(r.lead, "", "", "");
+      const lead = ensurePerson(r.lead, "", "", undefined);
       if (ws.leadId !== lead.id) { ws.leadId = lead.id; changedWs.add(ws.id); }
     }
     if (!r.person) return;

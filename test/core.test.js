@@ -84,6 +84,12 @@ test("chart CSV includes and imports Company while accepting older headers", () 
       .people[0].company,
     "",
   );
+  assert.equal(
+    planImport(base, oldCsv.replace("Bob", "Ann")).next.people[0].company,
+    "Northwind Health",
+  );
+  const blankCompanyCsv = "Workstream,Person,Company\nX,Ann,\n";
+  assert.equal(planImport(base, blankCompanyCsv).next.people[0].company, "");
 });
 test('workbook shares people, workstreams, and alignments as linked sheets', () => {
   const workbook = XLSX.read(createWorkstreamWorkbook(base, XLSX), { type: 'array' });
@@ -109,6 +115,54 @@ test('workbook shares people, workstreams, and alignments as linked sheets', () 
   assert.deepEqual(result.next.teams.at(-1), {
     id: 'tm-ws-y-p-bea', personId: bea.id, workstreamId: stream.id, role: 'Member', fte: 0.5,
   });
+});
+test("legacy workbooks without Company preserve existing company values", () => {
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(
+    workbook,
+    XLSX.utils.aoa_to_sheet([
+      [
+        "Person ID",
+        "Name",
+        "Job Title",
+        "Email",
+        "Reports To",
+        "Reports To ID",
+      ],
+      ["p-a", "Ann", "Lead", "", "", ""],
+    ]),
+    "People",
+  );
+  XLSX.utils.book_append_sheet(
+    workbook,
+    XLSX.utils.aoa_to_sheet([
+      ["Workstream ID", "Name", "Description", "Lead", "Lead ID"],
+      ["ws-x", "X", "d", "Ann", "p-a"],
+    ]),
+    "Workstreams",
+  );
+  XLSX.utils.book_append_sheet(
+    workbook,
+    XLSX.utils.aoa_to_sheet([
+      [
+        "Alignment ID",
+        "Person",
+        "Person ID",
+        "Workstream",
+        "Workstream ID",
+        "Team Role",
+        "FTE",
+      ],
+      ["tm-1", "Ann", "p-a", "X", "ws-x", "Lead", 1],
+    ]),
+    "Alignments",
+  );
+  const content = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+  assert.equal(
+    planWorkstreamWorkbookImport(base, content, { XLSX }).next.people[0]
+      .company,
+    "Northwind Health",
+  );
 });
 test('workbook clears visible links and prevents reporting cycles', () => {
   const current = {

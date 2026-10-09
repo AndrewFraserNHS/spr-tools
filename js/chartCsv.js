@@ -1,7 +1,17 @@
 // Flat "workstream chart" CSV <-> people / workstreams / teams. Pure functions (no DOM) so they can be tested.
 import { parseCsvObjects } from './csv.js';
 
-export const CHART_HEADERS = ['Workstream', 'Description', 'Lead', 'Person', 'Job title', 'Email', 'Team role', 'FTE'];
+export const CHART_HEADERS = [
+  "Workstream",
+  "Description",
+  "Lead",
+  "Person",
+  "Company",
+  "Job title",
+  "Email",
+  "Team role",
+  "FTE",
+];
 
 export function slug(s) {
   return String(s).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'item';
@@ -20,7 +30,8 @@ export function exportRows({ people, workstreams, teams }) {
   for (const ws of workstreams) {
     const lead = pById.get(ws.leadId)?.name ?? '';
     const members = teams.filter(t => t.workstreamId === ws.id);
-    if (!members.length) rows.push([ws.name, ws.description ?? '', lead, '', '', '', '', '']);
+    if (!members.length)
+      rows.push([ws.name, ws.description ?? "", lead, "", "", "", "", "", ""]);
     for (const t of members) {
       const p = pById.get(t.personId);
       if (p) exportedPeople.add(p.id);
@@ -29,6 +40,7 @@ export function exportRows({ people, workstreams, teams }) {
         ws.description ?? "",
         lead,
         p?.name ?? "",
+        p?.company ?? "",
         p?.role ?? "",
         p?.email ?? "",
         t.role ?? "",
@@ -38,7 +50,17 @@ export function exportRows({ people, workstreams, teams }) {
   }
   for (const p of people) {
     if (!exportedPeople.has(p.id))
-      rows.push(["", "", "", p.name, p.role ?? "", p.email ?? "", "", ""]);
+      rows.push([
+        "",
+        "",
+        "",
+        p.name,
+        p.company ?? "",
+        p.role ?? "",
+        p.email ?? "",
+        "",
+        "",
+      ]);
   }
   return rows;
 }
@@ -63,14 +85,32 @@ export function planImport(current, csvText, { replaceTeams = false } = {}) {
   const seenMembership = new Set();
   const changedWs = new Set(), addedWs = new Set(), changedP = new Set(), addedP = new Set();
 
-  const ensurePerson = (name, job, email) => {
+  const ensurePerson = (name, job, email, company) => {
     let p = pByName.get(key(name));
     if (!p) {
-      p = { id: uniqueId('p', name, ids), name: name.trim(), role: job || '', email: email || '' };
-      people.push(p); pByName.set(key(name), p); addedP.add(p.id);
+      p = {
+        id: uniqueId("p", name, ids),
+        name: name.trim(),
+        company: company || "",
+        role: job || "",
+        email: email || "",
+      };
+      people.push(p);
+      pByName.set(key(name), p);
+      addedP.add(p.id);
     } else {
-      if (job && p.role !== job) { p.role = job; changedP.add(p.id); }
-      if (email && p.email !== email) { p.email = email; changedP.add(p.id); }
+      if (company && p.company !== company) {
+        p.company = company;
+        changedP.add(p.id);
+      }
+      if (job && p.role !== job) {
+        p.role = job;
+        changedP.add(p.id);
+      }
+      if (email && p.email !== email) {
+        p.email = email;
+        changedP.add(p.id);
+      }
     }
     return p;
   };
@@ -78,7 +118,7 @@ export function planImport(current, csvText, { replaceTeams = false } = {}) {
   rows.forEach((r, i) => {
     const line = i + 2;
     if (!r.workstream) {
-      if (r.person) ensurePerson(r.person, r["job title"], r.email);
+      if (r.person) ensurePerson(r.person, r["job title"], r.email, r.company);
       else warnings.push(`Row ${line}: no workstream name, skipped.`);
       return;
     }
@@ -89,11 +129,11 @@ export function planImport(current, csvText, { replaceTeams = false } = {}) {
     }
     if (r.description && ws.description !== r.description) { ws.description = r.description; changedWs.add(ws.id); }
     if (r.lead) {
-      const lead = ensurePerson(r.lead, '', '');
+      const lead = ensurePerson(r.lead, "", "", "");
       if (ws.leadId !== lead.id) { ws.leadId = lead.id; changedWs.add(ws.id); }
     }
     if (!r.person) return;
-    const p = ensurePerson(r.person, r['job title'], r.email);
+    const p = ensurePerson(r.person, r["job title"], r.email, r.company);
     let fte = r.fte === '' || r.fte === undefined ? '' : Number(r.fte);
     if (fte !== '' && (!Number.isFinite(fte) || fte < 0)) { warnings.push(`Row ${line}: invalid FTE "${r.fte}", ignored.`); fte = ''; }
     seenMembership.add(ws.id + '|' + p.id);

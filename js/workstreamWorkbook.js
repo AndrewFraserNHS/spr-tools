@@ -194,11 +194,14 @@ function readTable(
   const selectedHeaders = [
     ...new Set([...requiredHeaders, ...optionalHeaders]),
   ];
+  const presentHeaders = selectedHeaders.filter((header) =>
+    columns.has(key(header)),
+  );
   return XLSX.utils
     .sheet_to_json(sheet, { defval: "", raw: true, blankrows: false })
     .map((row) =>
       Object.fromEntries(
-        selectedHeaders.map((header) => [
+        presentHeaders.map((header) => [
           header,
           row[columns.get(key(header))] ?? "",
         ]),
@@ -310,7 +313,8 @@ export function planWorkstreamWorkbookImport(
       peopleAdded++;
     } else if (
       person.name !== name ||
-      person.company !== text(row, "Company") ||
+      (Object.hasOwn(row, "Company") &&
+        person.company !== text(row, "Company")) ||
       person.role !== text(row, "Job Title") ||
       person.email !== text(row, "Email")
     ) {
@@ -318,7 +322,7 @@ export function planWorkstreamWorkbookImport(
     }
     peopleByName.delete(key(person.name));
     person.name = name;
-    person.company = text(row, "Company");
+    if (Object.hasOwn(row, "Company")) person.company = text(row, "Company");
     person.role = text(row, "Job Title");
     person.email = text(row, "Email");
     peopleByName.set(key(name), person);

@@ -1,9 +1,8 @@
 import { state, commit, uid, sortBy, person, workstream, personName, workstreamName, workstreamUsage, personUsage } from '../store.js';
 import { h, clear, fill, formDialog, confirmDialog, attempt, toast, download, pickFile, infoDialog } from '../ui.js';
-import { toCsv } from '../csv.js';
-import { exportRows, planImport } from '../chartCsv.js';
+import { createWorkstreamWorkbook, planWorkstreamWorkbookImport } from '../workstreamWorkbook.js';
 
-export const meta = { id: 'workstreams', title: 'Workstreams', desc: 'Workstreams and who is in each team. Import or export as CSV.' };
+export const meta = { id: 'workstreams', title: 'Workstreams', desc: 'Workstreams and who is in each team. Share updates with a workbook.' };
 export const count = () => state.workstreams.length;
 
 const COLOURS = ['#005eb8', '#007f3b', '#330072', '#ed8b00', '#00a499', '#ae2573', '#425563', '#006747'];
@@ -16,7 +15,7 @@ export function render(root) {
   const tabs = h('div', { class: 'tabs', role: 'tablist' });
   const TABS = [['teams', 'Team chart'], ['matrix', 'Matrix'], ['workstreams', 'Workstreams'], ['people', 'People'], ['csv', 'Import / export']];
 
-  const personOptions = () => [{ value: '', label: '- None -' }, ...sortBy(state.people, p => p.name).map(p => ({ value: p.id, label: p.name }))];
+  const personOptions = (excludeId = '') => [{ value: '', label: '- None -' }, ...sortBy(state.people.filter(p => p.id !== excludeId), p => p.name).map(p => ({ value: p.id, label: p.name }))];
   const done = msg => () => { toast(msg); paint(); };
 
   // ---- editors
@@ -51,9 +50,15 @@ export function render(root) {
       { name: 'name', label: 'Name', required: true },
       { name: 'role', label: 'Job title' },
       { name: 'email', label: 'Email', type: 'email' },
+      { name: 'reportsToId', label: 'Reports to', type: 'select', options: personOptions(item?.id) },
     ],
     onSubmit: v => {
       if (state.people.some(p => p.id !== item?.id && p.name.toLowerCase() === v.name.toLowerCase())) throw new Error('A person with that name already exists');
+      let manager = state.people.find(p => p.id === v.reportsToId);
+      while (manager) {
+        if (manager.id === item?.id) throw new Error('Reporting relationships cannot contain a cycle');
+        manager = state.people.find(p => p.id === manager.reportsToId);
+      }
       return commit('people', () => {
         if (item) Object.assign(state.people.find(p => p.id === item.id), v);
         else state.people.push({ id: uid('p', state.people, v.name), ...v });
@@ -62,7 +67,7 @@ export function render(root) {
   });
   const deletePerson = async item => {
     const u = personUsage(item.id);
-    const blockers = [u.leads && `leads ${u.leads} workstream(s)`, u.events && `is on ${u.events} event(s)`].filter(Boolean);
+    const blockers = [u.leads && `leads ${u.leads} workstream(s)`, u.reportsTo && `has ${u.reportsTo} direct report(s)`, u.events && `is on ${u.events} event(s)`].filter(Boolean);
     if (blockers.length) return infoDialog('Cannot delete person', h('p', null, `${item.name} ${blockers.join(' and ')}. Reassign those first.`));
     if (!await confirmDialog(`Delete ${item.name}${u.memberships ? ` and ${u.memberships} team membership(s)` : ''}?`, { title: 'Delete person', okLabel: 'Delete', danger: true })) return;
     if (await attempt(() => commit(['people', 'teams'], () => {
@@ -130,31 +135,30 @@ export function render(root) {
         h('button', { class: 'link danger', type: 'button', onclick: () => onDelete(r.item) }, 'Delete'))))))) : h('div', { class: 'card empty' }, 'Nothing here yet.'));
 
   const csvTab = () => h('div', { class: 'card' },
-    h('h2', { style: { marginTop: 0 } }, 'Workstream chart CSV'),
-    h('p', null, 'One file holds workstreams, people and team makeup. Columns: ', h('code', null, 'Workstream, Description, Lead, Person, Job title, Email, Team role, FTE'),
-      '. A workstream with no person is created without a team. People and workstreams are matched by name, so existing records are updated rather than duplicated.'),
+    h('h2', { style: { marginTop: 0 } }, 'Share workstream data'),
+    h('p', null, 'Download one workbook with separate People, Workstreams, and Alignments sheets. Names and descriptions are recorded once; alignments link people to workstreams. Add a Reports To relationship on the People sheet.'),
     h('div', { class: 'toolbar' },
-      h('button', { class: 'primary', type: 'button', onclick: () => download('workstream-chart.csv', toCsv(exportRows(state))) }, 'Export CSV'),
-      h('button', { class: 'secondary', type: 'button', onclick: importFlow }, 'Import CSV...')));
+      h('button', { class: 'primary', type: 'button', onclick: () => download('workstream-data.xlsx', createWorkstreamWorkbook(state), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') }, 'Download workbook'),
+      h('button', { class: 'secondary', type: 'button', onclick: importFlow }, 'Import workbook...')));
 
   async function importFlow() {
-    const text = await pickFile(); if (text == null) return;
-    const replaceBox = h('input', { type: 'checkbox', id: 'replace' });
+    const content = await pickFile('.xlsx,.xls', 'arrayBuffer'); if (content == null) return;
+    const replaceBox = h('input', { type: 'checkbox', id: 'replace-alignments' });
     const out = h('div');
     const dlg = infoDialog('Import preview', h('div', null, out,
       h('label', { style: { fontWeight: 400, display: 'flex', gap: '8px', alignItems: 'center', marginTop: '12px' } }, replaceBox,
-        'Remove team members not listed in the file (for workstreams in the file)')));
+        'Remove existing alignments omitted from this workbook')));
     let plan;
     const refresh = () => {
-      plan = planImport(state, text, { replaceTeams: replaceBox.checked });
+      plan = planWorkstreamWorkbookImport(state, content, { replaceAlignments: replaceBox.checked });
       const s = plan.summary;
       fill(out, 
-        h('ul', null,
+        s && h('ul', null,
           h('li', null, h('span', { class: 'diff-add' }, `${s.workstreams.added} new`), ', ', h('span', { class: 'diff-chg' }, `${s.workstreams.changed} changed`), ' workstreams'),
           h('li', null, h('span', { class: 'diff-add' }, `${s.people.added} new`), ', ', h('span', { class: 'diff-chg' }, `${s.people.changed} changed`), ' people'),
-          h('li', null, h('span', { class: 'diff-add' }, `${s.teams.added} new`), ', ', h('span', { class: 'diff-chg' }, `${s.teams.changed} changed`), ', ', h('span', { class: 'diff-del' }, `${s.teams.removed} removed`), ' memberships')),
+          h('li', null, h('span', { class: 'diff-add' }, `${s.alignments.added} new`), ', ', h('span', { class: 'diff-chg' }, `${s.alignments.changed} changed`), ', ', h('span', { class: 'diff-del' }, `${s.alignments.removed} removed`), ' alignments')),
         plan.warnings.length ? h('div', { class: 'error-summary' }, h('h2', null, 'Warnings'), h('ul', null, plan.warnings.slice(0, 10).map(w => h('li', null, w)))) : null);
-      apply.disabled = plan.warnings.some(w => /Missing required|No data rows/.test(w));
+      apply.disabled = !s;
     };
     const apply = h('button', { class: 'primary', type: 'button', onclick: async () => {
       dlg.close();
@@ -170,7 +174,7 @@ export function render(root) {
     const views = {
       teams: teamChart, matrix,
       workstreams: () => table(['Name', 'Description', 'Lead', 'Members'], sortBy(state.workstreams, w => w.name).map(w => ({ item: w, cells: [h('strong', null, w.name), w.description, personName(w.leadId), String(workstreamUsage(w.id).members)] })), editWs, deleteWs, () => editWs(null), 'Add workstream'),
-      people: () => table(['Name', 'Job title', 'Email', 'Teams'], sortBy(state.people, p => p.name).map(p => ({ item: p, cells: [h('strong', null, p.name), p.role, p.email, state.teams.filter(t => t.personId === p.id).map(t => h('span', { class: 'chip' }, workstreamName(t.workstreamId)))] })), editPerson, deletePerson, () => editPerson(null), 'Add person'),
+      people: () => table(['Name', 'Job title', 'Email', 'Reports to', 'Teams'], sortBy(state.people, p => p.name).map(p => ({ item: p, cells: [h('strong', null, p.name), p.role, p.email, personName(p.reportsToId), state.teams.filter(t => t.personId === p.id).map(t => h('span', { class: 'chip' }, workstreamName(t.workstreamId)))] })), editPerson, deletePerson, () => editPerson(null), 'Add person'),
       csv: csvTab,
     };
     clear(body).append(views[tab]());

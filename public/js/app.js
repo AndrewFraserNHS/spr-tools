@@ -40,4 +40,5 @@ try {
   main.replaceChildren(h('div', { class: 'card' }, h('h1', null, 'Cannot load data'), h('p', null, 'Start the local server with ', h('code', null, 'npm start'), ' and reload.'), h('p', { class: 'muted' }, e.message)));
 }
 
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+if ("serviceWorker" in navigator)
+  navigator.serviceWorker.register("./sw.js").catch(() => {});

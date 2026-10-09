@@ -25,6 +25,43 @@ test('export then import with no edits changes nothing', () => {
   assert.deepEqual(summary.teams, { added: 0, changed: 0, removed: 0 });
   assert.deepEqual(next, base);
 });
+test("chart export includes standalone people and unresolved team rows", () => {
+  const current = {
+    people: [
+      ...base.people,
+      { id: "p-b", name: "Bea", role: "Analyst", email: "bea@example.org" },
+    ],
+    workstreams: base.workstreams,
+    teams: [
+      ...base.teams,
+      {
+        id: "tm-missing",
+        workstreamId: "ws-x",
+        personId: "missing",
+        role: "Observer",
+        fte: 0.5,
+      },
+    ],
+  };
+  const rows = exportRows(current);
+  assert.deepEqual(rows[2], ["X", "d", "Ann", "", "", "", "Observer", 0.5]);
+  assert.deepEqual(rows[3], [
+    "",
+    "",
+    "",
+    "Bea",
+    "Analyst",
+    "bea@example.org",
+    "",
+    "",
+  ]);
+  const imported = planImport(base, toCsv(rows)).next;
+  assert.deepEqual(
+    imported.people.find((p) => p.id === "p-bea"),
+    { id: "p-bea", name: "Bea", role: "Analyst", email: "bea@example.org" },
+  );
+  assert.deepEqual(imported.teams, base.teams);
+});
 test('import adds new workstream, person and membership without duplicating', () => {
   const csv = 'Workstream,Person,Job title,Team role,FTE\nY,Bob,Analyst,Member,0.5\nX,Ann,,Lead,1\n';
   const { summary, next } = planImport(base, csv);

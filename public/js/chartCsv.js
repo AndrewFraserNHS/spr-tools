@@ -15,15 +15,30 @@ export function uniqueId(prefix, name, existing) {
 
 export function exportRows({ people, workstreams, teams }) {
   const pById = new Map(people.map(p => [p.id, p]));
+  const exportedPeople = new Set();
   const rows = [CHART_HEADERS];
   for (const ws of workstreams) {
     const lead = pById.get(ws.leadId)?.name ?? '';
     const members = teams.filter(t => t.workstreamId === ws.id);
     if (!members.length) rows.push([ws.name, ws.description ?? '', lead, '', '', '', '', '']);
     for (const t of members) {
-      const p = pById.get(t.personId); if (!p) continue;
-      rows.push([ws.name, ws.description ?? '', lead, p.name, p.role ?? '', p.email ?? '', t.role ?? '', t.fte ?? '']);
+      const p = pById.get(t.personId);
+      if (p) exportedPeople.add(p.id);
+      rows.push([
+        ws.name,
+        ws.description ?? "",
+        lead,
+        p?.name ?? "",
+        p?.role ?? "",
+        p?.email ?? "",
+        t.role ?? "",
+        t.fte ?? "",
+      ]);
     }
+  }
+  for (const p of people) {
+    if (!exportedPeople.has(p.id))
+      rows.push(["", "", "", p.name, p.role ?? "", p.email ?? "", "", ""]);
   }
   return rows;
 }
@@ -62,7 +77,11 @@ export function planImport(current, csvText, { replaceTeams = false } = {}) {
 
   rows.forEach((r, i) => {
     const line = i + 2;
-    if (!r.workstream) { warnings.push(`Row ${line}: no workstream name, skipped.`); return; }
+    if (!r.workstream) {
+      if (r.person) ensurePerson(r.person, r["job title"], r.email);
+      else warnings.push(`Row ${line}: no workstream name, skipped.`);
+      return;
+    }
     let ws = wsByName.get(key(r.workstream));
     if (!ws) {
       ws = { id: uniqueId('ws', r.workstream, ids), name: r.workstream, description: '', leadId: '' };

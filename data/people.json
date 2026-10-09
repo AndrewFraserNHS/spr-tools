@@ -1,6 +1,38 @@
 [
-  { "id": "p-aisha-khan", "name": "Aisha Khan", "role": "Programme Lead", "email": "" },
-  { "id": "p-ben-ortiz", "name": "Ben Ortiz", "role": "Project Manager", "email": "" },
-  { "id": "p-chloe-evans", "name": "Chloe Evans", "role": "Business Analyst", "email": "" },
-  { "id": "p-dev-patel", "name": "Dev Patel", "role": "Data Analyst", "email": "" }
+  {
+    "id": "p-andrew-fraser",
+    "name": "Andrew Fraser",
+    "role": "Lead Engineer",
+    "email": ""
+  },
+  {
+    "id": "p-chris-davison",
+    "name": "Chris Davison",
+    "role": "Project Manager",
+    "email": ""
+  },
+  {
+    "id": "p-will-murray",
+    "name": "Will Murray",
+    "role": "Business Analyst",
+    "email": ""
+  },
+  {
+    "id": "p-calum-scrimgeour",
+    "name": "Calum Scrimgeour",
+    "role": "Business Analyst",
+    "email": ""
+  },
+  {
+    "id": "p-maddy-sorenti",
+    "name": "Maddy Sorenti",
+    "role": "TBC",
+    "email": ""
+  },
+  {
+    "id": "p-biatta-l",
+    "name": "Biatta L",
+    "role": "TBC",
+    "email": ""
+  }
 ]

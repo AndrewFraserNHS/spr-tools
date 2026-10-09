@@ -10,28 +10,49 @@
     "id": "ac-icb",
     "short": "ICB",
     "long": "Integrated Care Board",
-    "description": "Statutory NHS organisation responsible for planning health services in a local area.",
+    "description": "Statutory NHS organization responsible for planning, managing the local NHS budget, and commissioning health services for a specific geographical area in England",
     "workstreamId": ""
   },
   {
-    "id": "ac-ics",
-    "short": "ICS",
-    "long": "Integrated Care System",
-    "description": "Partnership of organisations that plan and deliver joined-up health and care services.",
-    "workstreamId": ""
-  },
-  {
-    "id": "ac-pmo",
-    "short": "PMO",
-    "long": "Programme Management Office",
+    "id": "ac-dft",
+    "short": "DFT",
+    "long": "Data Flow Transformation",
     "description": "",
-    "workstreamId": "ws-delivery"
+    "workstreamId": ""
   },
   {
-    "id": "ac-spr",
-    "short": "SPR",
-    "long": "Specialist Programme Review",
-    "description": "Placeholder - replace with your own definition.",
-    "workstreamId": "ws-gov"
+    "id": "ac-sta",
+    "short": "STA",
+    "long": "Service Transformation Area",
+    "description": "",
+    "workstreamId": ""
+  },
+  {
+    "id": "ac-tcc",
+    "short": "TCC",
+    "long": "Transforming Connected Care",
+    "description": "",
+    "workstreamId": ""
+  },
+  {
+    "id": "ac-tcc",
+    "short": "TDA",
+    "long": "Transforming Data Analytics?",
+    "description": "",
+    "workstreamId": ""
+  },
+  {
+    "id": "ac-mns",
+    "short": "MNS",
+    "long": "Multicast Notification Service",
+    "description": "The NHS notification service, which allows for the sending of notifications to multiple recipients simultaneously.",
+    "workstreamId": "ws-eba"
+  },
+  {
+    "id": "ac-eba",
+    "short": "EBA",
+    "long": "Events Based Architecture",
+    "description": "A software architecture pattern that enables the creation of systems that can respond to events in real-time, allowing for more efficient and scalable applications.",
+    "workstreamId": "ws-eba"
   }
 ]

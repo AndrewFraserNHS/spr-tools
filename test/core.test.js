@@ -11,9 +11,19 @@ import { COLLECTIONS, createServer, isVaultEnvelope } from "../server.js";
 globalThis.crypto ??= webcrypto;
 
 const base = {
-  people: [{ id: 'p-a', name: 'Ann', role: 'Lead', email: '' }],
-  workstreams: [{ id: 'ws-x', name: 'X', description: 'd', leadId: 'p-a' }],
-  teams: [{ id: 'tm-1', workstreamId: 'ws-x', personId: 'p-a', role: 'Lead', fte: 1 }],
+  people: [
+    {
+      id: "p-a",
+      name: "Ann",
+      company: "Northwind Health",
+      role: "Lead",
+      email: "",
+    },
+  ],
+  workstreams: [{ id: "ws-x", name: "X", description: "d", leadId: "p-a" }],
+  teams: [
+    { id: "tm-1", workstreamId: "ws-x", personId: "p-a", role: "Lead", fte: 1 },
+  ],
 };
 
 test('csv round-trips quotes, commas and newlines', () => {
@@ -59,7 +69,7 @@ test('workbook shares people, workstreams, and alignments as linked sheets', () 
     rows.push(row);
     workbook.Sheets[sheetName] = XLSX.utils.aoa_to_sheet(rows);
   };
-  append('People', ['', 'Bea', 'Analyst', '', 'Ann', '']);
+  append("People", ["", "Bea", "Acme Health", "Analyst", "", "Ann", ""]);
   append('Workstreams', ['', 'Y', 'New stream', 'Bea', '']);
   append('Alignments', ['', 'Bea', '', 'Y', '', 'Member', 0.5]);
 
@@ -68,6 +78,7 @@ test('workbook shares people, workstreams, and alignments as linked sheets', () 
   const bea = result.next.people.find(person => person.name === 'Bea');
   const stream = result.next.workstreams.find(workstream => workstream.name === 'Y');
   assert.equal(bea.reportsToId, 'p-a');
+  assert.equal(bea.company, "Acme Health");
   assert.equal(stream.leadId, bea.id);
   assert.deepEqual(result.next.teams.at(-1), {
     id: 'tm-ws-y-p-bea', personId: bea.id, workstreamId: stream.id, role: 'Member', fte: 0.5,
@@ -85,8 +96,8 @@ test('workbook clears visible links and prevents reporting cycles', () => {
     rows[rowIndex][columnIndex] = value;
     workbook.Sheets[sheetName] = XLSX.utils.aoa_to_sheet(rows);
   };
-  setCell('People', 1, 4, 'Bea');
-  setCell('People', 2, 4, 'Ann');
+  setCell("People", 1, 5, "Bea");
+  setCell("People", 2, 5, "Ann");
   setCell('Workstreams', 1, 3, '');
   const result = planWorkstreamWorkbookImport(current, XLSX.write(workbook, { bookType: 'xlsx', type: 'array' }), { XLSX });
   assert.equal(result.next.people.find(person => person.id === 'p-a').reportsToId, undefined);

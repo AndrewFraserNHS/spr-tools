@@ -35,7 +35,7 @@ Renaming a person or workstream updates every view. Deleting something still in 
 
 ### Shared workstream workbook
 
-Use **Workstreams > Import / export > Download workbook** to share the data with a team. The `.xlsx` file has separate tabs for `People`, `Workstreams`, and `Alignments`, so names, job titles, descriptions, and contact details are recorded once. Alignments reference people and workstreams by name; hidden IDs preserve existing links if names change. `Reports To` is a person relationship on the `People` tab.
+Use **Workstreams > Import / export > Download workbook** to share the data with a team. The `.xlsx` file has separate tabs for `People`, `Workstreams`, and `Alignments`, so names, companies, job titles, descriptions, and contact details are recorded once. Alignments reference people and workstreams by name; hidden IDs preserve existing links if names change. `Reports To` is a person relationship on the `People` tab.
 
 Import the completed workbook from the same tab. It previews changes before applying them. The optional alignment replacement checkbox removes existing alignments omitted from the workbook; people and workstreams not listed are retained.
 

@@ -44,27 +44,47 @@ export function render(root) {
       state.teams = state.teams.filter(t => t.workstreamId !== item.id);
     }), 'Workstream deleted')) paint();
   };
-  const editPerson = item => formDialog({
-    title: item ? 'Edit person' : 'Add person', values: item || {},
-    fields: [
-      { name: 'name', label: 'Name', required: true },
-      { name: 'role', label: 'Job title' },
-      { name: 'email', label: 'Email', type: 'email' },
-      { name: 'reportsToId', label: 'Reports to', type: 'select', options: personOptions(item?.id) },
-    ],
-    onSubmit: v => {
-      if (state.people.some(p => p.id !== item?.id && p.name.toLowerCase() === v.name.toLowerCase())) throw new Error('A person with that name already exists');
-      let manager = state.people.find(p => p.id === v.reportsToId);
-      while (manager) {
-        if (manager.id === item?.id) throw new Error('Reporting relationships cannot contain a cycle');
-        manager = state.people.find(p => p.id === manager.reportsToId);
-      }
-      return commit('people', () => {
-        if (item) Object.assign(state.people.find(p => p.id === item.id), v);
-        else state.people.push({ id: uid('p', state.people, v.name), ...v });
-      }).then(done(item ? 'Person updated' : 'Person added'));
-    },
-  });
+  const editPerson = (item) =>
+    formDialog({
+      title: item ? "Edit person" : "Add person",
+      values: item || {},
+      fields: [
+        { name: "name", label: "Name", required: true },
+        { name: "company", label: "Company" },
+        { name: "role", label: "Job title" },
+        { name: "email", label: "Email", type: "email" },
+        {
+          name: "reportsToId",
+          label: "Reports to",
+          type: "select",
+          options: personOptions(item?.id),
+        },
+      ],
+      onSubmit: (v) => {
+        if (
+          state.people.some(
+            (p) =>
+              p.id !== item?.id &&
+              p.name.toLowerCase() === v.name.toLowerCase(),
+          )
+        )
+          throw new Error("A person with that name already exists");
+        let manager = state.people.find((p) => p.id === v.reportsToId);
+        while (manager) {
+          if (manager.id === item?.id)
+            throw new Error("Reporting relationships cannot contain a cycle");
+          manager = state.people.find((p) => p.id === manager.reportsToId);
+        }
+        return commit("people", () => {
+          if (item)
+            Object.assign(
+              state.people.find((p) => p.id === item.id),
+              v,
+            );
+          else state.people.push({ id: uid("p", state.people, v.name), ...v });
+        }).then(done(item ? "Person updated" : "Person added"));
+      },
+    });
   const deletePerson = async item => {
     const u = personUsage(item.id);
     const blockers = [u.leads && `leads ${u.leads} workstream(s)`, u.reportsTo && `has ${u.reportsTo} direct report(s)`, u.events && `is on ${u.events} event(s)`].filter(Boolean);
@@ -172,9 +192,48 @@ export function render(root) {
   function paint() {
     clear(tabs).append(...TABS.map(([id, label]) => h('button', { type: 'button', role: 'tab', 'aria-selected': tab === id, onclick: () => { tab = id; paint(); } }, label)));
     const views = {
-      teams: teamChart, matrix,
-      workstreams: () => table(['Name', 'Description', 'Lead', 'Members'], sortBy(state.workstreams, w => w.name).map(w => ({ item: w, cells: [h('strong', null, w.name), w.description, personName(w.leadId), String(workstreamUsage(w.id).members)] })), editWs, deleteWs, () => editWs(null), 'Add workstream'),
-      people: () => table(['Name', 'Job title', 'Email', 'Reports to', 'Teams'], sortBy(state.people, p => p.name).map(p => ({ item: p, cells: [h('strong', null, p.name), p.role, p.email, personName(p.reportsToId), state.teams.filter(t => t.personId === p.id).map(t => h('span', { class: 'chip' }, workstreamName(t.workstreamId)))] })), editPerson, deletePerson, () => editPerson(null), 'Add person'),
+      teams: teamChart,
+      matrix,
+      workstreams: () =>
+        table(
+          ["Name", "Description", "Lead", "Members"],
+          sortBy(state.workstreams, (w) => w.name).map((w) => ({
+            item: w,
+            cells: [
+              h("strong", null, w.name),
+              w.description,
+              personName(w.leadId),
+              String(workstreamUsage(w.id).members),
+            ],
+          })),
+          editWs,
+          deleteWs,
+          () => editWs(null),
+          "Add workstream",
+        ),
+      people: () =>
+        table(
+          ["Name", "Company", "Job title", "Email", "Reports to", "Teams"],
+          sortBy(state.people, (p) => p.name).map((p) => ({
+            item: p,
+            cells: [
+              h("strong", null, p.name),
+              p.company,
+              p.role,
+              p.email,
+              personName(p.reportsToId),
+              state.teams
+                .filter((t) => t.personId === p.id)
+                .map((t) =>
+                  h("span", { class: "chip" }, workstreamName(t.workstreamId)),
+                ),
+            ],
+          })),
+          editPerson,
+          deletePerson,
+          () => editPerson(null),
+          "Add person",
+        ),
       csv: csvTab,
     };
     clear(body).append(views[tab]());

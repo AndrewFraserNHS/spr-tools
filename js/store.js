@@ -1,11 +1,15 @@
 // Single source of truth: loads every /data collection once and writes changes back through the local server.
+import { openVault, sealVault } from "./vault.js";
+
 export const NAMES = ['people', 'workstreams', 'teams', 'links', 'events', 'acronyms', 'config'];
 export const state = Object.fromEntries(NAMES.map(n => [n, n === 'config' ? {} : []]));
 export const status = { writable: false, loaded: false };
 const listeners = new Set();
 const APP_ROOT = new URL("../", import.meta.url);
 const apiUrl = (path) => new URL(`api/${path}`, APP_ROOT);
-const dataUrl = (name) => new URL(`data/${name}.json`, APP_ROOT);
+const dataUrl = () => new URL("data/vault.json", APP_ROOT);
+let vaultKey = null;
+let vaultSalt = null;
 export const onStatus = fn => listeners.add(fn);
 const emit = () => listeners.forEach(fn => fn());
 
@@ -19,36 +23,79 @@ export async function ping() {
   return status.writable;
 }
 
-export async function load() {
+export async function load(passphrase) {
+  if (!passphrase) throw new Error("Enter the vault passphrase.");
   await ping();
-  await Promise.all(NAMES.map(async n => {
-    const res = await fetch(
-      status.writable ? apiUrl(`data/${n}`) : dataUrl(n),
-      { cache: "no-store" },
-    );
-    if (!res.ok) throw new Error(`Could not load ${n}`);
-    state[n] = await res.json();
-  }));
+  const res = await fetch(status.writable ? apiUrl("vault") : dataUrl(), {
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    if (res.status === 404)
+      throw new Error(
+        'The encrypted vault has not been created. Run "npm run protect-data" in the project terminal first.',
+      );
+    throw new Error("Could not load the encrypted vault.");
+  }
+  let envelope;
+  try {
+    envelope = await res.json();
+  } catch {
+    throw new Error("The encrypted vault file is invalid.");
+  }
+  const opened = await openVault(envelope, passphrase);
+  for (const name of NAMES) {
+    const value = opened.data[name];
+    const valid =
+      name === "config"
+        ? value && typeof value === "object" && !Array.isArray(value)
+        : Array.isArray(value);
+    if (!valid)
+      throw new Error(`Encrypted data has an invalid ${name} collection.`);
+  }
+  for (const name of NAMES) state[name] = opened.data[name];
+  vaultKey = opened.key;
+  vaultSalt = opened.salt;
   status.loaded = true;
+  emit();
 }
 
-async function write(name) {
-  const res = await fetch(apiUrl(`data/${name}`), {
+export function lock() {
+  for (const name of NAMES) state[name] = name === "config" ? {} : [];
+  vaultKey = null;
+  vaultSalt = null;
+  status.loaded = false;
+  status.writable = false;
+  emit();
+}
+
+async function writeVault() {
+  const envelope = await sealVault(
+    Object.fromEntries(NAMES.map((name) => [name, state[name]])),
+    vaultKey,
+    vaultSalt,
+  );
+  const res = await fetch(apiUrl("vault"), {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(state[name]),
+    body: JSON.stringify(envelope),
   });
-  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Save failed (${res.status})`);
+  if (!res.ok)
+    throw new Error(
+      (await res.json().catch(() => ({}))).error ||
+        `Save failed (${res.status})`,
+    );
 }
 
 /** Apply `mutate` to the named collections, persist them, and roll back everything if any write fails. */
 export async function commit(names, mutate) {
   names = [].concat(names);
+  if (!status.loaded || !vaultKey)
+    throw new Error("Unlock the data vault before editing.");
   if (!(await ping())) throw new Error('The local server is not running, so changes cannot be saved. Start it with "npm start".');
   const snapshot = Object.fromEntries(names.map(n => [n, structuredClone(state[n])]));
   try {
     mutate();
-    for (const n of names) await write(n);
+    await writeVault();
   } catch (e) {
     for (const n of names) state[n] = snapshot[n];
     throw e;

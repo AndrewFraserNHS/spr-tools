@@ -1,4 +1,0 @@
-[
-  { "id": "ln-nhs", "name": "NHS England", "description": "National NHS England website.", "href": "https://www.england.nhs.uk/", "workstreamId": "ws-gov", "category": "Reference", "subCategory": "National" },
-  { "id": "ln-digital", "name": "NHS Digital Service Manual", "description": "Design system and content style guide.", "href": "https://service-manual.nhs.uk/", "workstreamId": "ws-data", "category": "Guidance", "subCategory": "Design" }
-]

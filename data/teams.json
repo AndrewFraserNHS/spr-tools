@@ -1,0 +1,37 @@
+[
+  {
+    "id": "tm-1",
+    "workstreamId": "ws-eba",
+    "personId": "p-dev-patel",
+    "role": "Lead",
+    "fte": 1
+  },
+  {
+    "id": "tm-2",
+    "workstreamId": "ws-cr",
+    "personId": "p-chloe-evans",
+    "role": "Analyst",
+    "fte": 0.4
+  },
+  {
+    "id": "tm-3",
+    "workstreamId": "ws-tda",
+    "personId": "p-ben-ortiz",
+    "role": "Lead",
+    "fte": 1
+  },
+  {
+    "id": "tm-4",
+    "workstreamId": "ws-cdm",
+    "personId": "p-chloe-evans",
+    "role": "Analyst",
+    "fte": 0.6
+  },
+  {
+    "id": "tm-5",
+    "workstreamId": "ws-sta",
+    "personId": "p-aisha-khan",
+    "role": "Lead",
+    "fte": 0.5
+  }
+]

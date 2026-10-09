@@ -1,0 +1,26 @@
+[
+  {
+    "id": "ws-eba",
+    "name": "Events Based Architecture",
+    "description": "A system that allows for the creation of systems that can respond to events in real-time, allowing for more efficient and scalable applications.",
+    "leadId": "p-chris-davison"
+  },
+  {
+    "id": "ws-cr",
+    "name": "Core Record",
+    "description": "The data structure and processes that underpin the core record of a patient, including the data model, data quality, and data governance.",
+    "leadId": "p-maddy-sorenti"
+  },
+  {
+    "id": "ws-tda",
+    "name": "Transforming Data Analytics",
+    "description": "The workstream responsible for transforming the way data is collected, analysed, and used to inform decision-making within the organisation.",
+    "leadId": "p-biatta-l"
+  },
+  {
+    "id": "ws-cdm",
+    "name": "Core/Canonical Data Model",
+    "description": "The data model that defines the structure and relationships of the core data entities within the organisation.",
+    "leadId": "p-biatta-l"
+  }
+]

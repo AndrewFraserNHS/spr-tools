@@ -3,29 +3,40 @@ export const NAMES = ['people', 'workstreams', 'teams', 'links', 'events', 'acro
 export const state = Object.fromEntries(NAMES.map(n => [n, n === 'config' ? {} : []]));
 export const status = { writable: false, loaded: false };
 const listeners = new Set();
+const APP_ROOT = new URL("../", import.meta.url);
+const apiUrl = (path) => new URL(`api/${path}`, APP_ROOT);
+const dataUrl = (name) => new URL(`data/${name}.json`, APP_ROOT);
 export const onStatus = fn => listeners.add(fn);
 const emit = () => listeners.forEach(fn => fn());
 
 export async function ping() {
-  try { status.writable = (await fetch('/api/ping', { cache: 'no-store' })).ok; }
-  catch { status.writable = false; }
+  try {
+    status.writable = (await fetch(apiUrl("ping"), { cache: "no-store" })).ok;
+  } catch {
+    status.writable = false;
+  }
   emit();
   return status.writable;
 }
 
 export async function load() {
+  await ping();
   await Promise.all(NAMES.map(async n => {
-    const res = await fetch(`/api/data/${n}`, { cache: 'no-store' });
+    const res = await fetch(
+      status.writable ? apiUrl(`data/${n}`) : dataUrl(n),
+      { cache: "no-store" },
+    );
     if (!res.ok) throw new Error(`Could not load ${n}`);
     state[n] = await res.json();
   }));
   status.loaded = true;
-  await ping();
 }
 
 async function write(name) {
-  const res = await fetch(`/api/data/${name}`, {
-    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state[name]),
+  const res = await fetch(apiUrl(`data/${name}`), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(state[name]),
   });
   if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Save failed (${res.status})`);
 }

@@ -10,6 +10,7 @@ const SHELL = [
   "js/ui.js",
   "js/csv.js",
   "js/chartCsv.js",
+    "js/workstreamWorkbook.js", "js/vendor/xlsx.full.min.js",
   "js/tools/home.js",
   "js/tools/acronyms.js",
   "js/tools/workstreams.js",

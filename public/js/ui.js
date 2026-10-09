@@ -123,10 +123,13 @@ export function download(filename, text, type = 'text/csv;charset=utf-8') {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function pickFile(accept = '.csv') {
+export function pickFile(accept = '.csv', format = 'text') {
   return new Promise(resolve => {
     const input = h('input', { type: 'file', accept, style: { display: 'none' } });
-    input.addEventListener('change', async () => { const f = input.files[0]; input.remove(); resolve(f ? await f.text() : null); });
+    input.addEventListener('change', async () => {
+      const f = input.files[0]; input.remove();
+      resolve(f ? await (format === 'arrayBuffer' ? f.arrayBuffer() : f.text()) : null);
+    });
     input.addEventListener('cancel', () => { input.remove(); resolve(null); });
     document.body.append(input); input.click();
   });

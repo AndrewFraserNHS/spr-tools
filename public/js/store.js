@@ -82,6 +82,7 @@ export function workstreamUsage(id) {
 export function personUsage(id) {
   return {
     leads: state.workstreams.filter(w => w.leadId === id).length,
+    reportsTo: state.people.filter(p => p.reportsToId === id).length,
     events: state.events.filter(e => (e.personIds || []).includes(id)).length,
     memberships: state.teams.filter(t => t.personId === id).length,
   };

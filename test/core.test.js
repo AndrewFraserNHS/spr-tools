@@ -59,6 +59,32 @@ test('export then import with no edits changes nothing', () => {
   assert.deepEqual(summary.teams, { added: 0, changed: 0, removed: 0 });
   assert.deepEqual(next, base);
 });
+test("chart CSV includes and imports Company while accepting older headers", () => {
+  const rows = exportRows(base);
+  assert.deepEqual(rows[1], [
+    "X",
+    "d",
+    "Ann",
+    "Ann",
+    "Northwind Health",
+    "Lead",
+    "",
+    "Lead",
+    1,
+  ]);
+  const imported = planImport(
+    { people: [], workstreams: [], teams: [] },
+    toCsv(rows),
+  ).next;
+  assert.equal(imported.people[0].company, "Northwind Health");
+
+  const oldCsv = "Workstream,Person,Job title\nX,Bob,Analyst\n";
+  assert.equal(
+    planImport({ people: [], workstreams: [], teams: [] }, oldCsv).next
+      .people[0].company,
+    "",
+  );
+});
 test('workbook shares people, workstreams, and alignments as linked sheets', () => {
   const workbook = XLSX.read(createWorkstreamWorkbook(base, XLSX), { type: 'array' });
   assert.deepEqual(workbook.SheetNames, ['People', 'Workstreams', 'Alignments', 'Read Me']);
@@ -108,7 +134,13 @@ test("chart export includes standalone people and unresolved team rows", () => {
   const current = {
     people: [
       ...base.people,
-      { id: "p-b", name: "Bea", role: "Analyst", email: "bea@example.org" },
+      {
+        id: "p-b",
+        name: "Bea",
+        company: "",
+        role: "Analyst",
+        email: "bea@example.org",
+      },
     ],
     workstreams: base.workstreams,
     teams: [
@@ -123,12 +155,13 @@ test("chart export includes standalone people and unresolved team rows", () => {
     ],
   };
   const rows = exportRows(current);
-  assert.deepEqual(rows[2], ["X", "d", "Ann", "", "", "", "Observer", 0.5]);
+  assert.deepEqual(rows[2], ["X", "d", "Ann", "", "", "", "", "Observer", 0.5]);
   assert.deepEqual(rows[3], [
     "",
     "",
     "",
     "Bea",
+    "",
     "Analyst",
     "bea@example.org",
     "",
@@ -137,7 +170,13 @@ test("chart export includes standalone people and unresolved team rows", () => {
   const imported = planImport(base, toCsv(rows)).next;
   assert.deepEqual(
     imported.people.find((p) => p.id === "p-bea"),
-    { id: "p-bea", name: "Bea", role: "Analyst", email: "bea@example.org" },
+    {
+      id: "p-bea",
+      name: "Bea",
+      company: "",
+      role: "Analyst",
+      email: "bea@example.org",
+    },
   );
   assert.deepEqual(imported.teams, base.teams);
 });

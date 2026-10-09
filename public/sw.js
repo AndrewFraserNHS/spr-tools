@@ -1,5 +1,5 @@
 // Network-first service worker: always fresh when the server is up, usable (read-only) when it is not.
-const CACHE = 'spr-tools-v1';
+const CACHE = "spr-tools-v2-secure";
 const root = self.registration.scope;
 const SHELL = [
   "index.html",
@@ -10,7 +10,9 @@ const SHELL = [
   "js/ui.js",
   "js/csv.js",
   "js/chartCsv.js",
-    "js/workstreamWorkbook.js", "js/vendor/xlsx.full.min.js",
+  "js/workstreamWorkbook.js",
+  "js/vault.js",
+  "js/vendor/xlsx.full.min.js",
   "js/tools/home.js",
   "js/tools/acronyms.js",
   "js/tools/workstreams.js",

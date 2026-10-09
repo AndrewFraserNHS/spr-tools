@@ -1,10 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { webcrypto } from "node:crypto";
 import { parseCsv, toCsv, parseCsvObjects } from '../public/js/csv.js';
 import { exportRows, planImport } from '../public/js/chartCsv.js';
 import * as XLSX from '@e965/xlsx';
 import { createWorkstreamWorkbook, planWorkstreamWorkbookImport } from '../public/js/workstreamWorkbook.js';
-import { COLLECTIONS } from '../server.js';
+import { createVault, openVault } from "../public/js/vault.js";
+import { COLLECTIONS, createServer, isVaultEnvelope } from "../server.js";
+
+globalThis.crypto ??= webcrypto;
 
 const base = {
   people: [{ id: 'p-a', name: 'Ann', role: 'Lead', email: '' }],
@@ -18,6 +22,24 @@ test('csv round-trips quotes, commas and newlines', () => {
 });
 test('parseCsvObjects lower-cases headers', () => {
   assert.deepEqual(parseCsvObjects('Name,Job Title\nAnn,Boss\n'), [{ name: 'Ann', 'job title': 'Boss' }]);
+});
+test("vault encrypts data and rejects wrong passphrases or tampering", async () => {
+  const passphrase = "correct horse battery staple";
+  const vault = await createVault({ people: base.people }, passphrase);
+  assert.equal(JSON.stringify(vault).includes("Ann"), false);
+  assert.deepEqual((await openVault(vault, passphrase)).data, {
+    people: base.people,
+  });
+  assert.equal(isVaultEnvelope(vault), true);
+  await assert.rejects(
+    openVault(vault, "not the passphrase"),
+    /Incorrect passphrase/,
+  );
+  const modified = {
+    ...vault,
+    ciphertext: `${vault.ciphertext[0] === "A" ? "B" : "A"}${vault.ciphertext.slice(1)}`,
+  };
+  await assert.rejects(openVault(modified, passphrase), /Incorrect passphrase/);
 });
 test('export then import with no edits changes nothing', () => {
   const csv = toCsv(exportRows(base));
@@ -127,4 +149,18 @@ test('import requires the Workstream column', () => {
 });
 test('server whitelists collections', () => {
   assert.ok(COLLECTIONS.includes('events') && !COLLECTIONS.includes('../package'));
+});
+test("server exposes no plaintext collection API and rejects plaintext vault writes", async (t) => {
+  const server = createServer();
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const url = `http://127.0.0.1:${server.address().port}`;
+  assert.equal((await fetch(`${url}/api/data/people`)).status, 404);
+  const response = await fetch(`${url}/api/vault`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ people: base.people }),
+  });
+  assert.equal(response.status, 400);
+  assert.equal(isVaultEnvelope({ people: base.people }), false);
 });

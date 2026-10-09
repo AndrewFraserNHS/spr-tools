@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node server.js",
     "test": "node --test",
-    "deploy": "node scripts/deploy.mjs"
+    "deploy": "node scripts/deploy.mjs",
+    "protect-data": "node scripts/protect-data.mjs"
   },
   "engines": {
     "node": ">=20"

@@ -1,6 +1,6 @@
 # SPR Tools
 
-An NHS-styled, installable PWA hub for day-to-day tools. No dependencies, no build step.
+An NHS-styled, installable PWA hub for day-to-day tools. No frontend build step.
 
 ## Run
 
@@ -19,17 +19,17 @@ Open http://localhost:5173 and (optionally) install it from the browser's addres
 | Upcoming events | Editable list, workstream filter, `.ics` export |
 | Useful links | Grouped by workstream > category > sub-category, editable |
 
-## Data = the repo
+## Encrypted data vault
 
-All edits are written straight to `data/*.json` by the tiny local server (`server.js`, localhost only), so changes show up in `git diff`.
+Run `npm run protect-data` once before using or deploying. It converts the current collection files into an encrypted vault. After setup, edits are encrypted in the browser and saved by the localhost server as `data/vault.json`; plaintext collection files are removed from the repository and backed up outside it.
 
-Single source of truth, linked by ID so nothing is entered twice:
+The encrypted payload contains these linked collections:
 
-- `people.json` - one record per person
-- `workstreams.json` - lead is a person ID
-- `teams.json` - the only place team membership lives (workstream + person + role + FTE)
-- `links.json`, `events.json`, `acronyms.json` - reference workstreams/people by ID
-- `config.json` - shared constants (app name, suggested link categories)
+- people: one record per person, including the optional `reportsToId`
+- workstreams: lead is a person ID
+- teams: membership facts (workstream + person + role + FTE)
+- links, events, acronyms: reference workstreams/people by ID
+- config: shared constants (app name, suggested link categories)
 
 Renaming a person or workstream updates every view. Deleting something still in use is blocked with an explanation.
 
@@ -42,5 +42,11 @@ Import the completed workbook from the same tab. It previews changes before appl
 ## Offline
 
 A service worker caches the app. If the server is stopped the app still opens (read-only, "Offline" badge).
+
+### Data protection
+
+Before using or deploying this version, run `npm run protect-data` in a terminal. It encrypts all data with AES-256-GCM using a passphrase-derived key, writes only ciphertext to `data/vault.json`, and moves plaintext backups outside the repository. Keep the passphrase outside source control and share it with the team through a separate secure channel. If it is lost, the data cannot be recovered without the external plaintext backup.
+
+The app does not request the encrypted vault until someone enters the passphrase. GitHub Pages still serves the encrypted file publicly, but it does not contain readable records. Previously committed plaintext remains visible in Git history; if this repository has already been pushed somewhere others can access, history must also be purged and the exposed data treated as disclosed.
 
 Regenerate icons with `node scripts/make-icons.mjs`.
